@@ -4,6 +4,7 @@ use futures_util::{StreamExt, SinkExt};
 use ggstdl::{Character, Move};
 use regex::Regex;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
+use url::Url;
 
 const TWITCH_IRC_ADDRESS: &str = "ws://irc-ws.chat.twitch.tv:80";
 
@@ -18,6 +19,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let url = url::Url::parse(TWITCH_IRC_ADDRESS)?;
 
+    let mut val = web_socket_loop(&url, &pass, &nick, &channels).await;
+    while let Err(_) = val {
+        val = web_socket_loop(&url, &pass, &nick, &channels).await;
+    }
+
+    Ok(())
+}
+
+async fn web_socket_loop(url: &Url, pass: &String, nick: &String, channels: &String) -> Result<(), Box<dyn Error>> {
     let (mut ws_stream, _) = connect_async(url).await?;
     
     ws_stream.send(Message::Text(format!("PASS {}", pass))).await?;
@@ -45,9 +55,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             let move_print = move_found.format(false);
                             ws_stream.send(format_msg(move_print, command.channel)).await?
                         },
-                        /*
-                        TEST ME TEST ME TEST ME TEST ME TEST ME TEST ME TEST ME TEST ME TEST ME TEST ME TEST ME TEST ME 
-                        */
                         Err(err) => {
                             match err {
                                 ParseFramesCommandError::UnknownCharacter(query) => {
