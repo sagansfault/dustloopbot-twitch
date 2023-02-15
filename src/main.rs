@@ -21,6 +21,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let mut val = web_socket_loop(&url, &pass, &nick, &channels).await;
     while let Err(_) = val {
+        println!("Connection closed, resetting...");
         val = web_socket_loop(&url, &pass, &nick, &channels).await;
     }
 
