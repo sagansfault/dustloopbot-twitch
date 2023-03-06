@@ -103,7 +103,7 @@ fn parse_frames_command<'a>(args: Vec<String>, characters: &'a Vec<Character>) -
     let character = characters.iter().find(|c| c.regex.is_match(character_query.as_str()));
     let character = character.ok_or(ParseFramesCommandError::UnknownCharacter(character_query))?;
 
-    let move_found = character.moves.iter().find(|m| m.matcher.is_match(move_query.as_str()));
+    let move_found = character.moves.iter().find(|m| m.regex.is_match(move_query.as_str()));
     let move_found = move_found.ok_or(ParseFramesCommandError::UnknownMove(move_query))?;
 
     Ok(move_found)
