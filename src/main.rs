@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use futures_util::{StreamExt, SinkExt};
-use ggstdl::{Character, Move};
+use ggstdl::{Move, GGSTDLData};
 use regex::Regex;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use url::Url;
@@ -11,11 +11,9 @@ const TWITCH_IRC_ADDRESS: &str = "ws://irc-ws.chat.twitch.tv:80";
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
 
-    let pass = std::env::var("TWITCH_TOKEN")?;
-    let nick = std::env::var("TWITCH_NAME")?;
-    let channels = std::env::var("TWITCH_CHANNEL")?.split(",")
-    .map(|s| if !s.starts_with("#") { format!("#{}", s) } else { s.to_string() })
-    .collect::<Vec<String>>().join(",");
+    let pass = /*std::env::var("TWITCH_TOKEN")?;*/ "oauth:orrpiej21yehpzs6bw323uqj9ttxas".to_string();
+    let nick = "dustloopbot".to_string();
+    let channels = ["sagan37", "BedlessSleeper", "fgcsand"].map(|s| format!("#{}", s)).join(",");
 
     let url = url::Url::parse(TWITCH_IRC_ADDRESS)?;
 
@@ -35,7 +33,7 @@ async fn web_socket_loop(url: &Url, pass: &String, nick: &String, channels: &Str
     ws_stream.send(Message::Text(format!("NICK {}", nick))).await?;
     ws_stream.send(Message::Text(format!("JOIN {}", channels))).await?;
 
-    let characters = ggstdl::load().await.expect("Could not load DustloopInfo");
+    let data = ggstdl::load().await.expect("Could not load DustloopInfo");
 
     while let Some(msg) = ws_stream.next().await {
         let msg = msg?;
@@ -50,10 +48,10 @@ async fn web_socket_loop(url: &Url, pass: &String, nick: &String, channels: &Str
 
             if let Some(command) = parse_message_to_command(text) {
                 println!("{:?}", command);
-                if command.command.eq_ignore_ascii_case("!frames") {
-                    match parse_frames_command(command.args, &characters) {
+                if command.command.eq_ignore_ascii_case("!fd") {
+                    match parse_frames_command(command.args, &data) {
                         Ok(move_found) => {
-                            let move_print = move_found.format(false);
+                            let move_print = format_move(move_found);
                             ws_stream.send(format_msg(move_print, command.channel)).await?
                         },
                         Err(err) => {
@@ -90,7 +88,7 @@ enum ParseFramesCommandError {
     UnknownCharacter(String), UnknownMove(String), WrongArguments,
 }
 
-fn parse_frames_command<'a>(args: Vec<String>, characters: &'a Vec<Character>) -> Result<&'a Move, ParseFramesCommandError> {
+fn parse_frames_command<'a>(args: Vec<String>, data: &'a GGSTDLData) -> Result<&'a Move, ParseFramesCommandError> {
     let mut iter = args.into_iter();
 
     let character_query = iter.next().ok_or(ParseFramesCommandError::WrongArguments)?;
@@ -100,13 +98,13 @@ fn parse_frames_command<'a>(args: Vec<String>, characters: &'a Vec<Character>) -
         return Err(ParseFramesCommandError::WrongArguments);
     }
 
-    let character = characters.iter().find(|c| c.regex.is_match(character_query.as_str()));
-    let character = character.ok_or(ParseFramesCommandError::UnknownCharacter(character_query))?;
-
-    let move_found = character.moves.iter().find(|m| m.regex.is_match(move_query.as_str()));
-    let move_found = move_found.ok_or(ParseFramesCommandError::UnknownMove(move_query))?;
-
-    Ok(move_found)
+    match data.find_move(&character_query, &move_query) {
+        Ok(move_found) => Ok(move_found),
+        Err(e) => Err(match e {
+            ggstdl::GGSTDLError::UnknownCharacter => ParseFramesCommandError::UnknownCharacter(character_query),
+            ggstdl::GGSTDLError::UnknownMove => ParseFramesCommandError::UnknownMove(move_query),
+        }),
+    }
 }
 
 fn parse_message_to_command(raw: &str) -> Option<Command> {
@@ -137,4 +135,9 @@ fn parse_message_to_command(raw: &str) -> Option<Command> {
 
 fn format_msg(text: String, channel: String) -> Message {
     Message::Text(format!("PRIVMSG #{} :{}", channel, text))
+}
+
+fn format_move(fmt: &Move) -> String {
+    format!("{}: dmg=({}) guard=({}) startup=({}) active=({}) recov=({}) block=({}) hit=({})", 
+        fmt.input, fmt.damage, fmt.guard, fmt.startup, fmt.active, fmt.recovery, fmt.onblock, fmt.onhit)
 }
