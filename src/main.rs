@@ -11,7 +11,7 @@ const TWITCH_IRC_ADDRESS: &str = "ws://irc-ws.chat.twitch.tv:80";
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
 
-    let pass = /*std::env::var("TWITCH_TOKEN")?;*/ "oauth:orrpiej21yehpzs6bw323uqj9ttxas".to_string();
+    let pass = std::env::var("TWITCH_TOKEN")?;
     let nick = "dustloopbot".to_string();
     let channels = ["sagan37", "BedlessSleeper", "fgcsand"].map(|s| format!("#{}", s)).join(",");
 
