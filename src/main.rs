@@ -138,6 +138,6 @@ fn format_msg(text: String, channel: String) -> Message {
 }
 
 fn format_move(fmt: &Move) -> String {
-    format!("{}: dmg=({}) guard=({}) startup=({}) active=({}) recov=({}) block=({}) hit=({})", 
-        fmt.input, fmt.damage, fmt.guard, fmt.startup, fmt.active, fmt.recovery, fmt.onblock, fmt.onhit)
+    format!("{}: dmg=({}) guard=({}) startup=({}) active=({}) recov=({}) block=({}) hit=({}) atklvl=({})", 
+        fmt.input, fmt.damage, fmt.guard, fmt.startup, fmt.active, fmt.recovery, fmt.onblock, fmt.onhit, fmt.level)
 }
