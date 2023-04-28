@@ -13,7 +13,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let pass = std::env::var("TWITCH_TOKEN")?;
     let nick = "dustloopbot".to_string();
-    let channels = ["sagan37", "BedlessSleeper", "fgcsand"].map(|s| format!("#{}", s)).join(",");
+    let channels = ["sagan37", "BedlessSleeper", "fgcsand", "me_lolo"].map(|s| format!("#{}", s)).join(",");
 
     let url = url::Url::parse(TWITCH_IRC_ADDRESS)?;
 
